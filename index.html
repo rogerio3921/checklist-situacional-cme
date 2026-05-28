@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NS CheckList Situacional CME</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f4f8;
+      color: #222;
+      min-height: 100vh;
+    }
+
+    /* ===== SETUP FORM ===== */
+    #setupForm {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .setup-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      padding: 40px 36px;
+      max-width: 560px;
+      width: 100%;
+    }
+
+    .setup-card h1 {
+      font-size: 1.6rem;
+      color: #0066CC;
+      margin-bottom: 6px;
+    }
+
+    .setup-card .subtitle {
+      color: #666;
+      font-size: 0.95rem;
+      margin-bottom: 28px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 16px;
+      flex: 1 1 200px;
+    }
+
+    .form-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #444;
+    }
+
+    .form-group input,
+    .form-group select {
+      padding: 9px 12px;
+      border: 1.5px solid #d0d7e2;
+      border-radius: 7px;
+      font-size: 0.95rem;
+      color: #222;
+      background: #fafbfc;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #0066CC;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 7px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.18s, opacity 0.18s;
+    }
+
+    .btn-primary {
+      background: #0066CC;
+      color: #fff;
+    }
+
+    .btn-primary:hover { background: #0052a3; }
+
+    .btn-secondary {
+      background: #f0f4f8;
+      color: #0066CC;
+      border: 1.5px solid #0066CC;
+    }
+
+    .btn-secondary:hover { background: #dce8f7; }
+
+    .btn-danger {
+      background: #D32F2F;
+      color: #fff;
+    }
+
+    .btn-danger:hover { background: #b71c1c; }
+
+    .btn-success {
+      background: #388e3c;
+      color: #fff;
+    }
+
+    .btn-success:hover { background: #2e7d32; }
+
+    .btn-print {
+      background: #455a64;
+      color: #fff;
+    }
+
+    .btn-print:hover { background: #37474f; }
+
+    .btn-full { width: 100%; justify-content: center; margin-top: 8px; }
+
+    /* ===== MAIN APP ===== */
+    #mainApp { display: none; flex-direction: column; min-height: 100vh; }
+
+    /* Header */
+    .app-header {
+      background: #0066CC;
+      color: #fff;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+
+    .app-header h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .header-institution {
+      font-size: 0.9rem;
+      opacity: 0.88;
+      flex: 1;
+    }
+
+    .header-progress {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 180px;
+    }
+
+    .progress-bar-wrap {
+      flex: 1;
+      height: 8px;
+      background: rgba(255,255,255,0.3);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    #progressFill {
+      height: 100%;
+      background: #FFD54F;
+      border-radius: 4px;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+
+    #progressText {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #FFD54F;
+      min-width: 36px;
+      text-align: right;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 0.82rem;
+    }
+
+    /* ===== CONTENT AREA ===== */
+    .app-content {
+      flex: 1;
+      padding: 24px;
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* ===== MODULES MENU ===== */
+    #modulesMenu { display: none; }
+
+    .modules-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .modules-header h2 {
+      font-size: 1.2rem;
+      color: #333;
+    }
+
+    .modules-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    #modulesList {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .module-card {
+      background: #fff;
+      border: 2px solid #e0e7ef;
+      border-radius: 10px;
+      padding: 16px;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    }
+
+    .module-card:hover {
+      border-color: #0066CC;
+      box-shadow: 0 3px 12px rgba(0,102,204,0.13);
+      transform: translateY(-2px);
+    }
+
+    .module-card.completed { border-color: #4CAF50; }
+    .module-card.in-progress { border-color: #FBC02D; }
+
+    .module-card h3 {
+      font-size: 1rem;
+      margin-bottom: 8px;
+      color: #222;
+    }
+
+    .module-meta {
+      font-size: 0.82rem;
+      color: #666;
+      margin-bottom: 6px;
+    }
+
+    .module-progress-mini {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .module-progress-bar {
+      flex: 1;
+      height: 6px;
+      background: #e0e7ef;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .module-progress-fill {
+      height: 100%;
+      background: #0066CC;
+      border-radius: 3px;
+      transition: width 0.3s;
+    }
+
+    .module-percentage {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #0066CC;
+      min-width: 30px;
+      text-align: right;
+    }
+
+    .module-classification {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .module-classification.conforme { background: #e8f5e9; color: #2e7d32; }
+    .module-classification.alerta { background: #fff8e1; color: #f57f17; }
+    .module-classification.crítico { background: #ffebee; color: #b71c1c; }
+
+    /* ===== QUESTIONS SECTION ===== */
+    #questionsSection { display: none; }
+
+    .questions-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .questions-header h2 {
+      flex: 1;
+      font-size: 1.2rem;
+      color: #333;
+    }
+
+    #questionCounter {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #0066CC;
+      background: #e8f0fb;
+      padding: 4px 12px;
+      border-radius: 12px;
+    }
+
+    #questionsList {
+      min-height: 300px;
+    }
+
+    .question-item {
+      background: #fff;
+      border-radius: 10px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+
+    .question-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .question-number {
+      font-weight: 700;
+      color: #666;
+      font-size: 0.88rem;
+    }
+
+    .question-layer {
+      padding: 3px 10px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .question-layer.compliance { background: #ffebee; color: #b71c1c; }
+    .question-layer.performance { background: #fff8e1; color: #f57f17; }
+    .question-layer.intelligence { background: #e3f2fd; color: #1565c0; }
+
+    .question-text {
+      font-size: 1rem;
+      color: #222;
+      line-height: 1.5;
+      margin-bottom: 18px;
+    }
+
+    .response-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .response-option {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .response-option input[type="radio"] { accent-color: #0066CC; cursor: pointer; }
+    .response-option label { cursor: pointer; font-size: 0.92rem; }
+
+    .observation-input textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1.5px solid #d0d7e2;
+      border-radius: 7px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .observation-input textarea:focus {
+      outline: none;
+      border-color: #0066CC;
+    }
+
+    .questions-nav {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      gap: 12px;
+    }
+
+    /* ===== MODULE ANALYSIS ===== */
+    #moduleAnalysis { display: none; }
+
+    .analysis-header {
+      margin-bottom: 24px;
+    }
+
+    .analysis-header h2 {
+      font-size: 1.2rem;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .metrics-grid {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .metric-card {
+      flex: 1 1 140px;
+      background: #fff;
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+
+    .metric-label {
+      font-size: 0.82rem;
+      color: #666;
+      margin-bottom: 6px;
+    }
+
+    .metric-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #222;
+    }
+
+    .metric-value.conforme { color: #2e7d32; }
+    .metric-value.alerta { color: #f57f17; }
+    .metric-value.crítico { color: #b71c1c; }
+
+    .analysis-text-box {
+      background: #fff;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      font-size: 0.95rem;
+      color: #444;
+      line-height: 1.6;
+    }
+
+    .analysis-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* ===== DASHBOARD ===== */
+    #dashboard { display: none; }
+
+    .dashboard-header {
+      margin-bottom: 20px;
+    }
+
+    .dashboard-header h2 {
+      font-size: 1.2rem;
+      color: #333;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .kpi-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 18px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+
+    .kpi-title {
+      font-size: 0.82rem;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .kpi-value {
+      font-size: 2rem;
+      font-weight: 700;
+    }
+
+    .kpi-value.good { color: #2e7d32; }
+    .kpi-value.warning { color: #f57f17; }
+    .kpi-value.danger { color: #b71c1c; }
+
+    .kpi-subtitle {
+      font-size: 0.78rem;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #444;
+      margin: 20px 0 12px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #e0e7ef;
+    }
+
+    .module-summary-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .module-summary-row {
+      background: #fff;
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+      flex-wrap: wrap;
+    }
+
+    .module-summary-name { flex: 1; font-weight: 600; font-size: 0.95rem; }
+
+    .module-summary-score {
+      font-size: 1rem;
+      font-weight: 700;
+      min-width: 50px;
+      text-align: right;
+    }
+
+    .badge {
+      padding: 3px 10px;
+      border-radius: 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .badge.conforme { background: #e8f5e9; color: #2e7d32; }
+    .badge.alerta { background: #fff8e1; color: #f57f17; }
+    .badge.crítico { background: #ffebee; color: #b71c1c; }
+
+    .dashboard-actions {
+      margin-top: 24px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* ===== PRINT STYLES ===== */
+    @media print {
+      body { background: #fff; }
+      #mainApp { display: block !important; }
+      .app-header,
+      #modulesMenu,
+      #questionsSection,
+      #moduleAnalysis,
+      #dashboard,
+      #setupForm { display: none !important; }
+      #printQuestionsArea { display: block !important; }
+    }
+
+    #printQuestionsArea { display: none; }
+
+    .print-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #0066CC;
+      margin-bottom: 6px;
+    }
+
+    .print-subtitle {
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    .print-module-block { margin-bottom: 24px; }
+
+    .print-module-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #0066CC;
+      border-bottom: 2px solid #0066CC;
+      padding-bottom: 4px;
+      margin-bottom: 10px;
+    }
+
+    .print-question-row {
+      display: flex;
+      gap: 10px;
+      padding: 6px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 0.88rem;
+    }
+
+    .print-question-num {
+      font-weight: 700;
+      min-width: 40px;
+      color: #666;
+    }
+
+    .print-question-text { flex: 1; }
+
+    .print-question-layer {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 8px;
+      align-self: flex-start;
+      margin-top: 2px;
+    }
+
+    .print-layer-c { background: #ffebee; color: #b71c1c; }
+    .print-layer-p { background: #fff8e1; color: #f57f17; }
+    .print-layer-i { background: #e3f2fd; color: #1565c0; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 600px) {
+      .app-content { padding: 14px; }
+      .app-header { gap: 10px; }
+      .setup-card { padding: 24px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== SETUP FORM ===== -->
+  <div id="setupForm">
+    <div class="setup-card">
+      <h1>NS CheckList Situacional CME</h1>
+      <p class="subtitle">Preencha os dados da instituição para iniciar a avaliação</p>
+      <form id="institutionForm" novalidate>
+        <div class="form-group">
+          <label for="institutionName">Nome da Instituição *</label>
+          <input type="text" id="institutionName" placeholder="Ex.: Hospital São Lucas" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="city">Cidade *</label>
+            <input type="text" id="city" placeholder="Ex.: São Paulo" required>
+          </div>
+          <div class="form-group">
+            <label for="state">Estado *</label>
+            <input type="text" id="state" placeholder="Ex.: SP" maxlength="2" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="institutionType">Tipo de Instituição *</label>
+            <select id="institutionType" required>
+              <option value="">Selecione...</option>
+              <option value="Hospital Público">Hospital Público</option>
+              <option value="Hospital Privado">Hospital Privado</option>
+              <option value="Clínica">Clínica</option>
+              <option value="Ambulatório">Ambulatório</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="surgicalRooms">Salas Cirúrgicas</label>
+            <input type="number" id="surgicalRooms" placeholder="0" min="0" value="0">
+          </div>
+          <div class="form-group">
+            <label for="autoclaves">Autoclaves</label>
+            <input type="number" id="autoclaves" placeholder="0" min="0" value="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="responsibleName">Nome do Responsável *</label>
+            <input type="text" id="responsibleName" placeholder="Nome completo" required>
+          </div>
+          <div class="form-group">
+            <label for="role">Cargo / Função *</label>
+            <input type="text" id="role" placeholder="Ex.: Enfermeiro CME" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="email">E-mail</label>
+            <input type="email" id="email" placeholder="email@instituicao.com.br">
+          </div>
+          <div class="form-group">
+            <label for="phone">Telefone</label>
+            <input type="tel" id="phone" placeholder="(00) 00000-0000">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Iniciar Avaliação →</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== MAIN APP ===== -->
+  <div id="mainApp">
+
+    <!-- Header -->
+    <header class="app-header">
+      <h1>NS CheckList CME</h1>
+      <span id="institutionDisplay" class="header-institution"></span>
+      <div class="header-progress">
+        <div class="progress-bar-wrap">
+          <div id="progressFill"></div>
+        </div>
+        <span id="progressText">0%</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editInstitution()">✏️ Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="resetApp()">🗑️ Resetar</button>
+      </div>
+    </header>
+
+    <div class="app-content">
+
+      <!-- Modules Menu -->
+      <div id="modulesMenu">
+        <div class="modules-header">
+          <h2>Módulos de Avaliação</h2>
+          <div class="modules-actions">
+            <button id="btnPrintQuestions" class="btn btn-print" onclick="printQuestionsList()">🖨️ Imprimir Perguntas</button>
+            <button class="btn btn-primary" onclick="showDashboard()">📊 Dashboard</button>
+          </div>
+        </div>
+        <div id="modulesList"></div>
+      </div>
+
+      <!-- Questions Section -->
+      <div id="questionsSection">
+        <div class="questions-header">
+          <button class="btn btn-secondary btn-sm" onclick="backToModules()">← Módulos</button>
+          <h2 id="currentModuleTitle"></h2>
+          <span id="questionCounter"></span>
+        </div>
+        <div id="questionsList"></div>
+        <div class="questions-nav">
+          <button class="btn btn-secondary" onclick="previousQuestion()">← Anterior</button>
+          <button class="btn btn-primary" onclick="nextQuestion()">Próxima →</button>
+        </div>
+      </div>
+
+      <!-- Module Analysis -->
+      <div id="moduleAnalysis">
+        <div class="analysis-header">
+          <h2>Análise do Módulo</h2>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-label">Pontuação</div>
+            <div id="analysisPercentage" class="metric-value">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Classificação</div>
+            <div id="analysisClassification" class="metric-value">—</div>
+          </div>
+        </div>
+        <div class="analysis-text-box">
+          <p id="analysisText"></p>
+        </div>
+        <div class="analysis-actions">
+          <button class="btn btn-secondary" onclick="backToModules()">← Voltar aos Módulos</button>
+          <button class="btn btn-primary" onclick="backToModules()">Continuar Avaliação</button>
+        </div>
+      </div>
+
+      <!-- Dashboard -->
+      <div id="dashboard"></div>
+
+    </div><!-- /.app-content -->
+  </div><!-- /#mainApp -->
+
+  <!-- Print Area (hidden; shown only when printing via printQuestionsList) -->
+  <div id="printQuestionsArea"></div>
+
+  <script src="questions.js"></script>
+  <script src="categories.js"></script>
+  <script src="modules.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
