@@ -9,6 +9,7 @@ let evaluationHeader = null;
 let evaluationAnswers = [];
 
 function initApp() {
+    renderCopilotConfirmationHelp();
     const savedHeader = localStorage.getItem('evaluationHeader');
     const savedAnswers = localStorage.getItem('evaluationAnswers');
     if (savedHeader) {
@@ -18,6 +19,17 @@ function initApp() {
         showModulesMenu();
     } else {
         showSetupForm();
+    }
+}
+
+function getCopilotConfirmationExplanation() {
+    return "“Aguardar confirmação” é uma etapa de segurança para evitar execuções indesejadas. O Copilot só prossegue com geração, alteração de código ou automações quando você aceita no botão/comando de confirmação. Se a confirmação for recusada, essa etapa é interrompida imediatamente. Exemplo prático: “Você verá um aviso para aprovar ou recusar a próxima ação do Copilot, o botão de confirmação é obrigatório para proteger seu repositório e suas ações.” Para respostas apenas em chat textual, nunca é necessário confirmar.";
+}
+
+function renderCopilotConfirmationHelp() {
+    const helpElement = document.getElementById('copilotConfirmationHelp');
+    if (helpElement) {
+        helpElement.textContent = getCopilotConfirmationExplanation();
     }
 }
 
