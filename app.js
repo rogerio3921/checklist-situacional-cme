@@ -198,6 +198,167 @@ function showDashboard() {
     renderFullDashboard(evaluationAnswers, progressPercentage);
 }
 
+function renderFullDashboard(answers, progressPercentage) {
+    const container = document.getElementById('dashboard');
+    const uniqueModules = getModulesOrderedByBloco ? getModulesOrderedByBloco() : [...new Set(questions.map(q => q.module))];
+
+    // Calculate layer scores
+    const layerScores = { C: { total: 0, count: 0 }, P: { total: 0, count: 0 }, I: { total: 0, count: 0 } };
+    answers.forEach(answer => {
+        const question = questions.find(q => q.id === answer.questionId);
+        if (!question || answer.response === 'N/A') return;
+        const score = parseInt(answer.response);
+        if (!isNaN(score) && layerScores[question.layer] !== undefined) {
+            layerScores[question.layer].total += score;
+            layerScores[question.layer].count++;
+        }
+    });
+
+    function layerPct(layer) {
+        const d = layerScores[layer];
+        return d.count > 0 ? Math.round((d.total / (d.count * 4)) * 100) : 0;
+    }
+
+    function scoreClass(pct) {
+        if (pct >= 75) return 'good';
+        if (pct >= 50) return 'warning';
+        return 'danger';
+    }
+
+    // Build module rows HTML
+    let moduleRowsHtml = '';
+    uniqueModules.forEach(moduleName => {
+        const score = getModuleScore(moduleName, answers);
+        const classification = getModuleClassification(moduleName, answers);
+        const classLower = classification.toLowerCase();
+        const icon = typeof getModuleIcon === 'function' ? getModuleIcon(moduleName) : '📋';
+        moduleRowsHtml += `<div class="module-summary-row">
+            <span style="font-size:1.2rem">${icon}</span>
+            <span class="module-summary-name">${moduleName}</span>
+            <span class="module-summary-score ${scoreClass(score)}">${score}%</span>
+            <span class="badge ${classLower}">${classification}</span>
+        </div>`;
+    });
+
+    container.innerHTML = `
+        <div class="dashboard-header">
+            <h2>📊 Dashboard Geral</h2>
+        </div>
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-title">Progresso Geral</div>
+                <div class="kpi-value ${scoreClass(progressPercentage)}">${progressPercentage}%</div>
+                <div class="kpi-subtitle">perguntas respondidas</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">🔴 Compliance</div>
+                <div class="kpi-value ${scoreClass(layerPct('C'))}">${layerPct('C')}%</div>
+                <div class="kpi-subtitle">conformidade normativa</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">🟡 Performance</div>
+                <div class="kpi-value ${scoreClass(layerPct('P'))}">${layerPct('P')}%</div>
+                <div class="kpi-subtitle">eficiência operacional</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">🔵 Inteligência</div>
+                <div class="kpi-value ${scoreClass(layerPct('I'))}">${layerPct('I')}%</div>
+                <div class="kpi-subtitle">inovação e gestão</div>
+            </div>
+        </div>
+        <div class="section-title">Desempenho por Módulo</div>
+        <div class="module-summary-list">${moduleRowsHtml}</div>
+        <div class="dashboard-actions">
+            <button class="btn btn-secondary" onclick="backToModules()">← Módulos</button>
+            <button class="btn btn-success" onclick="exportToTxt()">⬇️ Exportar TXT</button>
+            <button class="btn btn-print" onclick="printQuestionsList()">🖨️ Imprimir Perguntas</button>
+        </div>`;
+}
+
+function exportToTxt() {
+    if (!evaluationHeader) return;
+    let txt = '=== NS CheckList Situacional CME ===\n\n';
+    txt += `Instituição: ${evaluationHeader.institutionName}\n`;
+    txt += `Cidade/Estado: ${evaluationHeader.city}/${evaluationHeader.state}\n`;
+    txt += `Tipo: ${evaluationHeader.type}\n`;
+    txt += `Responsável: ${evaluationHeader.responsibleName} (${evaluationHeader.role})\n`;
+    txt += `E-mail: ${evaluationHeader.email || '—'}\n`;
+    txt += `Telefone: ${evaluationHeader.phone || '—'}\n`;
+    txt += `Data: ${new Date().toLocaleDateString('pt-BR')}\n\n`;
+    txt += '='.repeat(40) + '\n\n';
+
+    const uniqueModules = [...new Set(questions.map(q => q.module))];
+    uniqueModules.forEach(moduleName => {
+        const moduleQuestions = questions.filter(q => q.module === moduleName);
+        txt += `MÓDULO: ${moduleName}\n`;
+        txt += '-'.repeat(30) + '\n';
+        moduleQuestions.forEach(q => {
+            const answer = evaluationAnswers.find(a => a.questionId === q.id);
+            const responseLabel = { '1': 'Não', '2': 'Parcial', '3': 'Sim', '4': 'Excelente', 'N/A': 'N/A' }[answer ? answer.response : 'N/A'] || 'N/A';
+            txt += `[${q.id}] ${q.text}\n`;
+            txt += `    Resposta: ${responseLabel}`;
+            if (answer && answer.observation) {
+                txt += ` | Obs: ${answer.observation}`;
+            }
+            txt += '\n';
+        });
+        const score = getModuleScore(moduleName, evaluationAnswers);
+        const classification = getModuleClassification(moduleName, evaluationAnswers);
+        txt += `  Score: ${score}% — ${classification}\n\n`;
+    });
+
+    const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `checklist_cme_${evaluationHeader.institutionName.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function printQuestionsList() {
+    const layerLabel = { 'C': 'Compliance', 'P': 'Performance', 'I': 'Inteligência' };
+    const layerClass = { 'C': 'print-layer-c', 'P': 'print-layer-p', 'I': 'print-layer-i' };
+    const uniqueModules = getModulesOrderedByBloco ? getModulesOrderedByBloco() : [...new Set(questions.map(q => q.module))];
+
+    let html = `<div class="print-title">NS CheckList Situacional CME — Lista de Perguntas</div>`;
+    if (evaluationHeader) {
+        html += `<div class="print-subtitle">Instituição: ${escapeHtml(evaluationHeader.institutionName)} — ${escapeHtml(evaluationHeader.city)}/${escapeHtml(evaluationHeader.state)}</div>`;
+    }
+
+    uniqueModules.forEach(moduleName => {
+        const moduleQuestions = questions.filter(q => q.module === moduleName);
+        if (moduleQuestions.length === 0) return;
+        const icon = typeof getModuleIcon === 'function' ? escapeHtml(getModuleIcon(moduleName)) : '';
+        html += `<div class="print-module-block">
+            <div class="print-module-name">${icon} ${escapeHtml(moduleName)}</div>`;
+        moduleQuestions.forEach(q => {
+            html += `<div class="print-question-row">
+                <span class="print-question-num">#${escapeHtml(q.id)}</span>
+                <span class="print-question-text">${escapeHtml(q.text)}</span>
+                <span class="print-question-layer ${escapeHtml(layerClass[q.layer] || '')}">${escapeHtml(layerLabel[q.layer] || q.layer)}</span>
+            </div>`;
+        });
+        html += `</div>`;
+    });
+
+    const printArea = document.getElementById('printQuestionsArea');
+    printArea.innerHTML = html;
+    printArea.style.display = 'block';
+    window.print();
+    printArea.style.display = 'none';
+    printArea.innerHTML = '';
+}
+
 function updateProgressBar() {
     const progressPercentage = getOverallProgress(evaluationAnswers);
     document.getElementById('progressFill').style.width = progressPercentage + '%';
